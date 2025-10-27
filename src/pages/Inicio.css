@@ -1,0 +1,66 @@
+/* Fondo y estructura general */
+.inicio-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(to bottom, #ffffff 0%, #eeeeee 100%);
+  font-family: "Segoe UI", sans-serif;
+  color: #6d4c41;
+}
+
+/* Encabezado superior */
+.inicio-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 40px;
+  font-weight: bold;
+  font-size: 14px;
+  color: #6d4c41;
+}
+
+/* Contenido central */
+.inicio-content {
+  text-align: center;
+}
+
+.logo-text {
+  font-family: "Brush Script MT", "Segoe Script", cursive;
+  font-size: 70px;
+  color: #6d4c41;
+  margin-bottom: 40px;
+}
+
+/* Botones principales */
+.botones {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 25px;
+}
+
+.botones button {
+  width: 300px;
+  height: 60px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #6d4c41;
+  background: transparent;
+  border: 2px solid #6d4c41;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.botones button:hover {
+  background-color: #6d4c41;
+  color: white;
+}
+
+/* Pie de página */
+.inicio-footer {
+  text-align: right;
+  padding: 20px 40px;
+  font-weight: bold;
+  color: #6d4c41;
+}
