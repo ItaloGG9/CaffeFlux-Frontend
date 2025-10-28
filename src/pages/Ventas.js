@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import "./Ventas.css";
 
 export default function Ventas() {
   const API_URL = process.env.REACT_APP_API_URL;
@@ -7,20 +8,25 @@ export default function Ventas() {
   const [carrito, setCarrito] = useState([]);
   const [total, setTotal] = useState(0);
 
-  // Cargar productos disponibles desde el backend
+  // Cargar productos desde el backend
   useEffect(() => {
-    axios.get(`${API_URL}/productos`)
-      .then(res => setProductos(res.data))
-      .catch(err => console.error("Error cargando productos:", err));
+    axios
+      .get(`${API_URL}/productos`)
+      .then((res) => setProductos(res.data))
+      .catch((err) => console.error("Error cargando productos:", err));
   }, [API_URL]);
 
   // Agregar producto al carrito
   const agregarAlCarrito = (producto) => {
-    const existe = carrito.find(p => p.id === producto.id);
+    const existe = carrito.find((p) => p.id_producto === producto.id_producto);
     if (existe) {
-      setCarrito(carrito.map(p => 
-        p.id === producto.id ? { ...p, cantidad: p.cantidad + 1 } : p
-      ));
+      setCarrito(
+        carrito.map((p) =>
+          p.id_producto === producto.id_producto
+            ? { ...p, cantidad: p.cantidad + 1 }
+            : p
+        )
+      );
     } else {
       setCarrito([...carrito, { ...producto, cantidad: 1 }]);
     }
@@ -28,76 +34,93 @@ export default function Ventas() {
   };
 
   // Eliminar producto del carrito
-  const eliminarDelCarrito = (id) => {
-    const item = carrito.find(p => p.id === id);
+  const eliminarDelCarrito = (id_producto) => {
+    const item = carrito.find((p) => p.id_producto === id_producto);
     if (item) {
-      setCarrito(carrito.filter(p => p.id !== id));
-      setTotal(total - (item.precio_venta * item.cantidad));
+      setCarrito(carrito.filter((p) => p.id_producto !== id_producto));
+      setTotal(total - item.precio_venta * item.cantidad);
     }
   };
 
-  // Simular pago / guardar venta
+  // Registrar venta (simulación)
   const registrarVenta = () => {
     if (carrito.length === 0) return alert("No hay productos en la venta.");
+
     const datosVenta = {
       total,
-      items: carrito.map(p => ({ id_producto: p.id, cantidad: p.cantidad }))
+      items: carrito.map((p) => ({
+        id_producto: p.id_producto,
+        cantidad: p.cantidad,
+      })),
     };
 
-    axios.post(`${API_URL}/ventas`, datosVenta)
+    axios
+      .post(`${API_URL}/ventas`, datosVenta)
       .then(() => {
         alert("Venta registrada correctamente ✅");
         setCarrito([]);
         setTotal(0);
       })
-      .catch(err => console.error("Error registrando venta:", err));
+      .catch((err) => console.error("Error registrando venta:", err));
   };
 
   return (
-    <div style={styles.container}>
+    <div className="ventas-container">
       <h2>Registro de Ventas</h2>
 
-      <div style={styles.layout}>
-        {/* Lista de productos */}
-        <div style={styles.productos}>
+      <div className="ventas-layout">
+        {/* 🧃 Productos disponibles */}
+        <div className="productos-section">
           <h3>Productos Disponibles</h3>
-          <div style={styles.grid}>
-            {productos.map(prod => (
-              <button
-                key={prod.id}
-                style={styles.btnProd}
-                onClick={() => agregarAlCarrito(prod)}
-              >
-                {prod.nombre}<br />${prod.precio_venta}
-              </button>
+          <div className="productos-grid">
+            {productos.map((prod) => (
+              <div key={prod.id_producto} className="producto-card">
+                <img
+                  src={
+                    prod.jerarquia === "Bebidas"
+                      ? "https://cdn-icons-png.flaticon.com/512/826/826970.png"
+                      : "https://cdn-icons-png.flaticon.com/512/924/924514.png"
+                  }
+                  alt={prod.nombre_producto}
+                />
+                <h4>{prod.nombre_producto}</h4>
+                <p>${prod.precio_venta}</p>
+                <button onClick={() => agregarAlCarrito(prod)}>
+                  Agregar
+                </button>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* Carrito */}
-        <div style={styles.carrito}>
+        {/* 🛒 Carrito */}
+        <div className="carrito-section">
           <h3>Carrito</h3>
           {carrito.length === 0 ? (
             <p>No hay productos seleccionados.</p>
           ) : (
-            <table style={styles.table}>
+            <table className="carrito-table">
               <thead>
                 <tr>
                   <th>Producto</th>
                   <th>Cant.</th>
-                  <th>Precio</th>
+                  <th>Total</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {carrito.map(item => (
-                  <tr key={item.id}>
-                    <td>{item.nombre}</td>
+                {carrito.map((item) => (
+                  <tr key={item.id_producto}>
+                    <td>{item.nombre_producto}</td>
                     <td>{item.cantidad}</td>
                     <td>${item.precio_venta * item.cantidad}</td>
                     <td>
-                      <button style={styles.btnEliminar}
-                        onClick={() => eliminarDelCarrito(item.id)}>
+                      <button
+                        className="btn-eliminar"
+                        onClick={() =>
+                          eliminarDelCarrito(item.id_producto)
+                        }
+                      >
                         ❌
                       </button>
                     </td>
@@ -108,38 +131,11 @@ export default function Ventas() {
           )}
 
           <h3>Total: ${total}</h3>
-          <button style={styles.btnConfirmar} onClick={registrarVenta}>Confirmar Venta</button>
+          <button className="btn-confirmar" onClick={registrarVenta}>
+            Confirmar Venta
+          </button>
         </div>
       </div>
     </div>
   );
 }
-
-// 🎨 Estilos simples
-const styles = {
-  container: { padding: 20, textAlign: "center" },
-  layout: { display: "flex", justifyContent: "space-between", marginTop: 20 },
-  productos: { width: "60%" },
-  carrito: { width: "35%", border: "1px solid #ccc", borderRadius: 8, padding: 15 },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 },
-  btnProd: {
-    backgroundColor: "#3a6ea5",
-    color: "white",
-    border: "none",
-    borderRadius: 8,
-    padding: "10px",
-    fontSize: "14px",
-    cursor: "pointer"
-  },
-  table: { width: "100%", borderCollapse: "collapse", marginTop: 10 },
-  btnEliminar: { backgroundColor: "transparent", border: "none", cursor: "pointer", fontSize: "16px" },
-  btnConfirmar: {
-    backgroundColor: "#4caf50",
-    color: "white",
-    padding: "10px 20px",
-    border: "none",
-    borderRadius: 8,
-    cursor: "pointer",
-    fontWeight: "bold"
-  }
-};
