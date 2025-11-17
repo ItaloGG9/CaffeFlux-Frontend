@@ -16,7 +16,7 @@ const Toast = ({ message, type, onClose }) => {
         borderRadius: '8px',
         color: 'white',
         fontWeight: 'bold',
-        zIndex: 2000, // Z-index alto para que esté encima de todo
+        zIndex: 2000, 
         backgroundColor: type === 'success' ? '#28a745' : '#dc3545', 
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
         cursor: 'pointer',
@@ -56,21 +56,28 @@ export default function CerrarDia() {
     const navigate = useNavigate();
     const [cargando, setCargando] = useState(false);
     
-    // 🟢 ESTADO para el mensaje de resultado (Toast)
+    // ESTADO para el mensaje de resultado (Toast superior)
     const [toastMessage, setToastMessage] = useState(null);
     const [toastType, setToastType] = useState('success'); 
     
-    // 🟢 NUEVO ESTADO para la Confirmación (Modal)
+    // ESTADO para la Confirmación (Modal)
     const [showConfirm, setShowConfirm] = useState(false);
 
     const API_URL = process.env.REACT_APP_API_URL;
 
     // Función auxiliar para formatear horas (solo hora y minuto)
+    // 🟢 CORRECCIÓN APLICADA AQUÍ para solucionar el desfase de 12 horas
     const formatTime = (time) => {
         if (!time) return "?";
         try {
-            return new Date(time).toLocaleTimeString('es-CL', {
-                hour: '2-digit', minute: '2-digit'
+            // Si la cadena no termina en 'Z', la añadimos para forzar a JavaScript 
+            // a interpretarla como UTC y convertirla correctamente a la hora local.
+            const dateString = String(time).endsWith('Z') ? time : time + 'Z';
+
+            return new Date(dateString).toLocaleTimeString('es-CL', {
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false // Formato 24 horas para mayor claridad
             });
         } catch (e) {
             return "?";
@@ -84,13 +91,13 @@ export default function CerrarDia() {
         setTimeout(() => setToastMessage(null), 8000); 
     };
 
-    // 🟢 Lógica de la confirmación: Se llama al hacer click
+    // Lógica de la confirmación: Se llama al hacer click en el botón principal
     const handleCerrarDiaClick = () => {
-        setToastMessage(null); // Limpia mensajes anteriores
-        setShowConfirm(true);  // Muestra el modal de confirmación
+        setToastMessage(null); 
+        setShowConfirm(true); 
     };
 
-    // 🟢 Lógica principal de ejecución: Se llama si se acepta el modal
+    // Lógica principal de ejecución: Se llama si se acepta el modal
     const generarInforme = async () => {
         setShowConfirm(false); // Oculta el modal
 
@@ -110,30 +117,105 @@ export default function CerrarDia() {
             let totalGeneral = 0;
             pagos.forEach(p => { totalGeneral += p.total || 0; });
 
-            // 🔹 2. Generar el PDF con jsPDF (Lógica del PDF)
+            // 🔹 2. Generar el PDF con jsPDF
             const doc = new jsPDF();
-            let y = 20;
+            let y = 20; // Posición inicial vertical
 
-            // ... (Lógica de generación del PDF) ...
+            // === Título ===
             doc.setFont("helvetica", "bolditalic");
             doc.setFontSize(20);
             doc.text("Informe Del Día - CaffeFlux ☕", 105, y, { align: 'center' });
             y += 15;
-            // ... (resto de la lógica del PDF) ...
+
+            // === Información de Generación ===
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.text("Fecha: " + new Date().toLocaleDateString(), 20, y);
+            y += 7; 
+            doc.text("Generado a las: " + new Date().toLocaleTimeString(), 20, y);
+            y += 15;
+
+            // === Resumen de Ventas ===
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Resumen de Ventas", 20, y);
+            y += 10;
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+
+            // Lógica del PDF para evitar el informe vacío (De la corrección anterior)
+            let ventasDesglosadas = false;
+            
+            pagos.forEach((p) => {
+                if (p.productos && p.productos.length > 0) {
+                    ventasDesglosadas = true;
+                    p.productos.forEach(prod => {
+                        doc.text(`- ${prod.nombre} x${prod.cantidad}: $${(prod.precio_unitario * prod.cantidad).toFixed(2)}`, 25, y);
+                        y += 7; 
+                    });
+                } else {
+                    doc.text(`- Venta sin productos registrados: $${(p.total || 0).toFixed(2)}`, 25, y);
+                    y += 7;
+                    ventasDesglosadas = true;
+                }
+            });
+            
+            if (!ventasDesglosadas && pagos.length === 0) {
+                doc.text("No se registraron ventas en este período.", 25, y);
+                y += 15;
+            } else {
+                 y += 5;
+            }
+            // Fin Lógica del PDF para evitar el informe vacío
+            
+
+            // Separador y Total
+            doc.setFont("helvetica", "bold");
+            doc.text(`TOTAL DEL DÍA: $${totalGeneral.toFixed(2)}`, 20, y);
+            y += 15;
+
+
+            // === Turnos Cerrados ===
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("Turnos Cerrados:", 20, y);
+            y += 10;
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+
+            if (turnosCerrados.length > 0) {
+                turnosCerrados.forEach((t) => {
+                    // Aquí se usa la función formatTime corregida
+                    const inicio = formatTime(t.hora_apertura); 
+                    const fin = formatTime(t.hora_cierre); // Aquí se usa la función formatTime corregida
+                    
+                    doc.text(
+                        `Empleado: ${t.usuario_responsable || 'Desconocido'} | inicio: ${inicio} | fin: ${fin}`,
+                        25,
+                        y
+                    );
+                    y += 7;
+                });
+            } else {
+                 doc.text("No hay turnos cerrados registrados.", 25, y);
+                 y += 7;
+            }
+
 
             // 🔹 3. Guardar PDF
             doc.save(`informe_caffeflux_${new Date().toISOString().split("T")[0]}.pdf`);
 
             // 🔹 4. Borrar los datos del backend (DELETEs)
             const [resPagos, resCerrados, resActivos] = await Promise.all([
-                axios.delete(`${API_URL}/api/pagos`),
-                axios.delete(`${API_URL}/api/turnos/cerrados`),
+                axios.delete(`${API_URL}/api/pagos`), 
+                axios.delete(`${API_URL}/api/turnos/cerrados`), 
                 axios.delete(`${API_URL}/api/turnos/activos`) 
             ]);
 
             const mensajeActivos = resActivos.data.message;
 
-            // Usar Toast en lugar de alert() para éxito
             showToast(
                 `✅ Informe generado y datos limpiados correctamente. Turnos Activos: ${mensajeActivos}`,
                 'success'
@@ -152,7 +234,6 @@ export default function CerrarDia() {
                 errorMessage = JSON.stringify(err);
             }
             
-            // Usar Toast en lugar de alert() para error
             showToast(`Error al generar el informe y/o limpiar datos: ${errorMessage}`, 'error');
 
         } finally {
@@ -163,7 +244,7 @@ export default function CerrarDia() {
     return (
         <div style={styles.container}>
             
-            {/* 🟢 Toast de resultado (Mensaje que modificaste) - Posición superior central */}
+            {/* Toast de resultado (Banner de éxito/error) - Posición superior central */}
             <Toast 
                 message={toastMessage} 
                 type={toastType} 
@@ -174,7 +255,7 @@ export default function CerrarDia() {
             <p>Genera un informe PDF con las ventas y turnos del día, y luego limpia todos los datos de la base de datos.</p>
 
             <button
-                // 🟢 LLAMA A LA FUNCIÓN QUE MUESTRA EL MODAL
+                // LLAMA A LA FUNCIÓN QUE MUESTRA EL MODAL DE CONFIRMACIÓN
                 onClick={handleCerrarDiaClick} 
                 style={styles.pdfBtn}
                 disabled={cargando}
@@ -182,11 +263,11 @@ export default function CerrarDia() {
                 {cargando ? "Generando y Limpiando..." : "🧾 Generar Informe y Cerrar Día"}
             </button>
             
-            {/* 🟢 Modal de Confirmación - Se muestra debajo del botón */}
+            {/* Modal de Confirmación - Se muestra justo debajo del botón */}
             {showConfirm && (
                 <ConfirmModal 
-                    onConfirm={generarInforme} // Si acepta, ejecuta la lógica
-                    onCancel={() => setShowConfirm(false)} // Si cancela, oculta el modal
+                    onConfirm={generarInforme} 
+                    onCancel={() => setShowConfirm(false)} 
                 />
             )}
             
@@ -198,14 +279,13 @@ export default function CerrarDia() {
 }
 
 const styles = {
-    // ... (Estilos del componente principal) ...
     container: {
         backgroundColor: "#e7c09bcb",
         padding: 30,
         minHeight: "100vh",
         textAlign: "center",
         fontFamily: "Arial, sans-serif",
-        position: 'relative', // Necesario para posicionar el modal correctamente
+        position: 'relative', 
     },
     pdfBtn: {
         backgroundColor: "#dc3545", 
@@ -230,7 +310,7 @@ const styles = {
     },
 };
 
-// 🟢 ESTILOS ESPECÍFICOS PARA EL MODAL DE CONFIRMACIÓN
+// ESTILOS ESPECÍFICOS PARA EL MODAL DE CONFIRMACIÓN
 const modalStyles = {
     overlay: {
         position: 'absolute',
@@ -250,7 +330,7 @@ const modalStyles = {
         boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)',
         maxWidth: '400px',
         textAlign: 'center',
-        border: '3px solid #dc3545', // Borde rojo de advertencia
+        border: '3px solid #dc3545', 
     },
     message: {
         fontSize: '1.1em',
