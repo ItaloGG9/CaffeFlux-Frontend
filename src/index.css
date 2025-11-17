@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+/* Dentro del archivo src/index.css */
+
+body {
+    margin: 0; /* Asegura que el body no tenga margen */
+    padding: 0; /* Asegura que no tenga padding */
+    /* Puedes agregar aquí la fuente de la aplicación, ejemplo: */
+    /* font-family: 'Arial', sans-serif; */
+}
+
+/* El resto de estilos globales pueden quedarse */
